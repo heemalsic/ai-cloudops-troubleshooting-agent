@@ -1,5 +1,6 @@
 # AI CloudOps Troubleshooting Agent
 
+![UI](images/Screenshot%202026-03-05%20175424.png)
 An AI-powered CloudOps assistant that automatically diagnoses Google Cloud service failures using real logs and Gemini.
 
 ## Features
@@ -29,6 +30,7 @@ Cloud Logging API → RAG Docs → Gemini → Diagnosis
 
 ## Example Output
 
+![UI](images/Screenshot 2026-03-06 051753.png)
 Root Cause: Container not listening on port 8080  
 Evidence: Logs show container startup failure  
 Fix: Bind service to 0.0.0.0:8080
