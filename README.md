@@ -13,6 +13,7 @@ An AI-powered CloudOps assistant that automatically diagnoses Google Cloud servi
 
 ## Architecture
 
+![UI](images/architecture.png)
 User → Streamlit UI → FastAPI API →  
 Cloud Logging API → RAG Docs → Gemini → Diagnosis
 
