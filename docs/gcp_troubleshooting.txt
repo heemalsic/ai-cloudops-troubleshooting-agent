@@ -1,0 +1,15 @@
+Cloud Run requires containers to listen on port 8080.
+
+If the container does not bind to port 8080, the revision will fail.
+
+Fix:
+Ensure your application listens on port 8080.
+
+Example for FastAPI:
+
+uvicorn app:app --host 0.0.0.0 --port 8080
+
+If a container repeatedly restarts in Cloud Run, check logs for memory errors.
+
+Fix:
+Increase container memory or optimize application memory usage.

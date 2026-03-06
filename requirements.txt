@@ -1,0 +1,15 @@
+fastapi
+uvicorn
+google-cloud-aiplatform
+google-generativeai
+langchain
+langchain-google-genai
+faiss-cpu
+pydantic
+langchain-community
+python-dotenv
+google-cloud-logging
+beautifulsoup4
+streamlit
+requests
+langchain-text-splitters

@@ -1,0 +1,1161 @@
+This page describes how to troubleshoot errors you might encounter while using Cloud Run. Personalized Service Health publishes
+all Cloud Run incidents that stem from the
+underlying Google Cloud infrastructure to identify Google Cloud service disruptions
+impacting your projects. You should also consider setting up alerts on Personalized Service Health events. For information
+about incidents affecting all Google Cloud services, see the Google Cloud Service Health dashboard.
+Check for existing issues or open new issues in the
+public issue trackers.
+For other errors messages not listed In this page, see Known issues in Cloud Run. If you continue to encounter errors even after following
+the steps in this guide, contact support.
+See the following sections for guidance on how to resolve issues in Cloud Run:
+This section describes the common deployment errors in Cloud Run and
+methods to troubleshoot them.
+The following error occurs when you try to deploy:
+To resolve this issue, follow these steps:
+Verify that you can
+run your container image locally. If your
+container image cannot run locally, you need to diagnose and fix the issue
+locally first.
+Check if your container is
+listening for requests on the on the correct port.
+Your container must listen for incoming requests on the port that is defined
+by Cloud Run and provided in the PORT environment variable. For
+instructions on how to specify the port,see
+Configuring containers for services
+Check if your container is listening on all
+network interfaces, commonly denoted as 0.0.0.0. Notably, your container
+should not listen on 127.0.0.1.
+Verify that your container image is compiled
+for 64-bit Linux as required by the
+container runtime contract.
+Use Cloud Logging to
+look for application errors in stdout or stderr logs.
+You can also
+look for crashes captured in Error Reporting.
+You might need to update your code or your revision settings to fix errors
+or crashes. You can also
+troubleshoot your service locally.
+The following error occurs when you try to deploy:
+To resolve this issue, follow these steps:
+Ensure container's file system does not contain
+non-utf8 characters.
+Some Windows based Docker images make use of
+foreign layers.
+Cloud Run's control plane doesn't support foreign-layers. To
+resolve this issue, try setting the --allow-nondistributable-artifacts flag
+in the Docker daemon.
+The following error occurs when you call the Cloud Run Admin API:
+This error occurs when you call the Cloud Run Admin API directly and use a beta
+feature without specifying a launch stage annotation or field.
+To resolve this issue, add the launch stage field to the requests.
+Refer to the following examples for adding launch stage references when using
+the v1 or the v2 REST API:
+Launch stage annotation to a client request using
+JSON and the v1 REST API:
+LaunchStage reference to a
+client request using JSON and the v2 REST API:
+Launch stage annotation to a service request using
+YAML and the v1 REST API:
+The following error occurs when the customer managed encryption keys are
+specified using a --key parameter:
+To resolve this issue, specify USER 0 instead of USER root in the
+Dockerfile.
+The following error occurs during deployment:
+This issue occurs in either of the following scenarios:
+The
+default Compute Engine service account
+doesn't exist in the project, and a service account isn't specified with the
+--service-account flag at the time of deployment.
+The developer or principal deploying the service is doesn't have the
+required permissions
+for the default Compute Engine service account to deploy.
+To resolve this issue:
+Specify a service account using the --service-account flag:
+Verify that the service account you specify has the
+permissions required to deploy.
+To verify if the default Compute Engine service agent exists in your Google Cloud project, follow these steps:
+In the Google Cloud console, go to the Identity and Access Management Permissions page:
+Go to Permissions 
+Select the Include Google-provided role grants checkbox.
+In the Principals list, locate the ID of the Compute Engine service
+agent, which follows the format, PROJECT_NUMBER-compute@developer.gserviceaccount.com.
+The following error occurs during source deployments when the Cloud Build
+service account doesn't have the required permissions or is disabled:
+Cloud Build changed the default behavior for how Cloud Build uses
+service accounts in new projects. This is detailed in
+Cloud Build default service account change. As a result of this change, new projects
+deploying to Cloud Run from source code for the first time might be
+using a default Cloud Build service account with insufficient permissions for
+deploying from source.
+To resolve this issue, follow these steps:
+Review the Cloud Build guidance on changes to the default service account and
+opt out
+of these changes.
+Grant the Cloud Run Builder
+(roles/run.builder) role to the build service account.
+The following error occurs when you try to deploy from a project
+using an image that is stored in the Artifact Registry, using the gcr.io domain
+in a different project:
+You might also see the following error when you try to deploy from a project
+using an image that is stored in the Artifact Registry in a different project:
+To resolve this issue, follow these troubleshooting recommendations:
+Follow the instructions for
+deploying container images from other Google Cloud projects
+to ensure that your principals have the necessary permissions.
+This issue might also occur if the project is in a VPC Service Controls
+perimeter with a restriction on the Cloud Storage API that prohibits
+requests from the Cloud Run service agent. To fix this:
+Open Logs Explorer in the Google Cloud console. (Do not use the
+Logs page inside the Cloud Run page):
+Go to Logs Explorer 
+Enter the following text in the query field:
+If you see any log entries after you use this query, examine the log
+entries to determine whether you need to update your VPC Service Controls policies.
+They may indicate that you need to add
+service-PROJECT_NUMBER@serverless-robot-prod.iam.gserviceaccount.com
+to a pre-existing access policy.
+The following errors might occur when deploying from the source:
+Every Cloud Run service is associated with a service account that
+serves as its identity when
+the service accesses other resources. This service account
+might be the default service account (PROJECT_NUMBER-compute@developer.gserviceaccount.com) or a user-managed service account.
+In environments where multiple services are accessing different resources, you
+might use per-service identities with different user-managed service accounts instead of
+the default service account.
+To resolve this issue, grant the deployer account the Service Account User role (roles/iam.serviceAccountUser)
+on the service account that is used as the service identity.
+This predefined role contains the iam.serviceAccounts.actAs permission, which
+is required to attach a service account on the service or revision. A user who
+creates a user-managed service account is automatically granted the iam.serviceAccounts.actAs permission, however, other deployers must have this
+permission granted by the user who creates the user-managed service account.
+For more information regarding access requirements for any new service accounts
+you create, see Get recommendations to create dedicated service accounts.
+The following error occurs when the deployer account is missing the required
+permissions on your project:
+To resolve this error, ask your administrator to grant you the following Identity and Access Management roles:
+The following error occurs when you deploy a Cloud Run service from
+a source project to a target project:
+To resolve this issue, follow these steps:
+Grant the Service Account User (roles/iam.serviceAccountUser) role on the service account that you use as the service identity in your target project.
+Grant the Service Account Token Creator (roles/iam.serviceAccountTokenCreator) role to the Cloud Run service account in the target project. Add the Cloud Run service agent email (service-PROJECT_NUMBER@SERVICE_DOMAIN.iam.gserviceaccount.com) as the principal from the source project.
+Turn off the iam.disableCrossProjectServiceAccountUsage organization policy.
+For detailed instructions, see Configure service identity for services.
+When you deploy a Cloud Run service from source code with the Python
+runtime, one of the following errors occurs:
+The Python buildpack sets the default entrypoint for Cloud Run source deployments. For Python version 3.13
+and later, the Python buildpack sets the entrypoint based on the web service configuration in your requirements.txt file. If you don't specify a
+web server or framework in the requirements.txt file, or use Python version 3.12 and earlier, the Python buildpack sets the default entrypoint to gunicorn -b :8080 main:app. For more information, see Building a Python application.
+You can resolve this issue in several ways. For example, you can specify one of the following web servers in your requirements.txt file:
+gunicorn:
+fastapi and uvicorn:
+Alternatively, you can follow either of these steps to resolve deployment errors:
+Specify the entrypoint by running the following source deploy command:
+Replace the following:
+Use a Procfile to set an
+entrypoint.
+This section lists issues that you might encounter with serving and provides
+suggestions for how to fix each of them.
+The following issue occurs during serving:
+You might encounter HTTP 404 errors in the following scenarios:
+An incorrect request URL or application code returns 404 errors. To resolve
+this issue, follow these steps:
+Check if the URL you requested is correct. You can verify the URL either in
+the service details page in the Google Cloud console or by running the following command:
+Inspect where your app returns 404 error codes. If your
+app returns 404, you can find it in Cloud Logging. Also, verify that
+the app does not return a 404 error code when you
+run it locally.
+Make sure that your app doesn't start listening on its configured port before it
+is ready to receive requests.
+The request doesn't reach the container, leading to a 404 error in the following
+scenarios:
+A request doesn't satisfy the specified network restriction, especially
+when Cloud Run service's ingress settings
+are set to Internal or Internal and Cloud Load Balancing.
+The Cloud Run service's default run.app URL is disabled, and a client attempts to reach the
+service at that run.app URL.
+In both of these scenarios, you can't find the 404 error in
+Cloud Logging, even when you apply the following filter:
+With the same ingress settings, the request might be blocked by
+VPC Service Controls based on the caller's context, including project and IP address. To check for a VPC Service Controls
+policy violation:
+Open Logs Explorer in the Google Cloud console:
+Go to Logs Explorer 
+Enter the following text in the query field:
+If you see any log entries after you use this query, examine the log
+entries to determine whether or not you need to update your VPC Service Controls
+policies.
+Access your service endpoint with a load balancer using the Python runtime.
+To resolve this issue, verify the URL mask for your load balancer, and ensure that the
+URL path you specify for the load balancer matches the path in your Python source code.
+
+The following error occurs during serving:
+To resolve this issue, check the Container instance count metric for your
+service and consider increasing this limit if your usage is nearing the maximum.
+For more information, see Set maximum instances for services, and if you need more instances, request a quota increase.
+The following error occurs either during serving or when the service
+hasn't reached its maximum container instance limit:
+To resolve this issue, follow these steps:
+Address the following possible root causes:
+Implement exponential backoff and retries for requests that the client must
+not drop. A short and sudden increase in traffic or request
+processing time might only be visible in Cloud Monitoring if you zoom
+in to a 10-second resolution.
+When the root cause of the issue is a period of heightened transient errors
+attributable solely to Cloud Run, contact support.
+The following error occurs during serving:
+This error occurs when the container fails to start and become healthy within
+your configured time. While this can have multiple causes, a common reason is
+the container's inability to access a required secret from
+Secret Manager.
+To resolve this issue, consider the following:
+Verify IAM permissions: Ensure that your Cloud Run
+service account has the Secret Manager Secret Accessor (roles/secretmanager.secretAccessor) role on the secret
+you are trying to access.
+Check the secret path: Verify that you specify the correct secret name and
+version in your
+application's configuration.
+Inspect network configuration: If you are using a VPC Service Controls perimeter
+or firewall rules, ensure that you allow egress
+traffic to
+secretmanager.googleapis.com.
+Output effective logs: Add logging to your
+application's startup process, especially around fetching secrets, to
+diagnose specific failures.
+The following error occurs when you specify an incorrect REGION while
+invoking your Cloud Run job, such as when you deploy a job in the
+region asia-southeast1, and invoke your job using southeast1-asia or
+asia-southeast:
+For the list of supported regions, see Cloud Run locations.
+The following error occurs when your application isn't authenticated properly
+due to missing files, invalid credential paths, or incorrect environment variables
+assignments:
+To resolve this issue:
+Install and initialize the gcloud CLI.
+Set up Application Default Credentials (ADC) with the credentials that are
+associated with the user. Configure ADC using:
+A sign-in screen appears. After you sign in, your credentials are stored in
+the local credential file,
+used by ADC.
+Use the GOOGLE_APPLICATION_CREDENTIALS environment variable to provide the
+location of a credential JSON file within your Google Cloud project.
+For more information, see Set up Application Default Credentials.
+The following HTTP 500 or HTTP 503 error occurs during serving in Cloud Logging:
+To resolve this issue:
+In Cloud Run, files written to the local file system count
+towards the available memory. This also includes any log files that are written
+to locations other than /var/log/* and /dev/log.
+The following error occurs when your container instances are using a high
+CPU load to process requests, and as a result, are unable to process all of
+the requests:
+To resolve this issue, follow these steps:
+Increase the maximum number of container instances
+for your service.
+Lower the service's concurrency. For more
+information, see Set maximum concurrent requests per instance.
+When running under root namespaces that violate constraints listed in the container runtime contract,
+you might see Cloud Logging logs that contain errors from the Linux kernel
+such as "Operation not permitted" or "Permission denied." These errors appear
+when the system calls attempting to perform these actions are rejected. For
+guidance on making your containers more compatible with Cloud Run
+execution environments, see Adapt your containers for Cloud Run.
+Attempts to mount file systems might have logs such as the following:
+If your application tries to modify files under /proc or /sys with tools
+like sysctl, your logs might contain errors such as the following:
+Attempts to run sudo will fail with logs that declare the following:
+Other system calls, like mlockall, might fail with errors such as the
+following:
+Errors are unique to the code in question and to how well you implement logging
+and error handling.
+One of the following errors occur when Cloud Run fails to scale
+up fast enough to manage traffic:
+To resolve this issue, follow these steps:
+Address the root causes that might cause scaling failures, such as:
+For more information on resolving scaling issues, and optimizing performance, see
+General development tips.
+For HTTP trigger-based services or functions, have the client implement exponential
+backoff and retries for requests that must not be dropped. If you are triggering
+services from Workflows, you can use the try/retry syntax to achieve this.
+For background or event-driven services or functions, Cloud Run supports
+at-least-once delivery.
+Even without explicitly enabling retry, Cloud Run automatically
+re-delivers the event and retries the execution. See
+Retrying event-driven functions
+for more information.
+For issues pertaining to cold starts, configure
+minimum instances to reduce the amount of cold starts with a higher billing implication.
+When the root cause of the issue is a period of heightened transient errors
+attributed solely to Cloud Run or if you need assistance with
+your issue, contact support.
+The following error occurs during development and testing phases:
+This error might occur in the following scenarios:
+The user logs in by using Google Cloud CLI or Cloud Shell.
+The user generates an ID token by using gcloud commands.
+The user tries to use the ID token to invoke a non-public Cloud Run
+service.
+This is the expected default behavior. Google removes the token signature due
+to security concerns to prevent any non-public Cloud Run service from
+replaying ID tokens that are generated in this manner.
+To resolve this issue, invoke your private service with a new ID token. For more
+information, see Test your private service.
+If you use OpenBLAS-based
+libraries such as NumPy with the
+first generation execution environment,
+you might see the following warning in your logs:
+The OpenBLAS warning occurs when the container sandbox used by the first generation
+execution environment doesn't expose low level hardware features. This warning
+doesn't impact your service. To avoid OpenBLAS warnings log entries,
+switch to the second generation execution environment.
+When Spark fails while obtaining the IP address of the binding machine, one of
+the following errors occurs:
+To resolve this issue, set the SPARK_LOCAL_IP environment variable to 127.0.0.1 in
+your Dockerfile, for example, ENV SPARK_LOCAL_IP="127.0.0.1". If you don't
+set the SPARK_LOCAL_IP environment variable, it defaults to its IPv6 counterpart
+instead of the localhost. Additionally, Spark doesn't recognize the environment
+variable set as RUN export SPARK_LOCAL_IP="127.0.0.1".
+See the Cloud Storage FUSE troubleshooting guide.
+Your service might experience high request latencies or fail to scale up under
+load, even though Cloud Monitoring shows average CPU utilization is well
+below the typical 60% scaling target.
+This might occur if your application is single-threaded for CPU-bound
+tasks but is deployed on an instance with multiple vCPUs. Your application
+might max out one vCPU core while other cores remain mostly idle. The Cloud Run
+autoscaler uses the average CPU utilization across all vCPUs; this average might
+be low in these cases, which prevents CPU-based scaling.
+This section describes the common connectivity and security errors in
+Cloud Run and methods to troubleshoot them.
+
+The following error occurs during serving:
+To resolve this issue:
+If a service account invokes your Cloud Run service, set
+the audience claim (aud) of the Google-signed ID token to the following:
+If you set the aud to the URL of the receiving service using the format
+https://SERVICE.run.app or https://REGION-PROJECT_ID.cloudfunctions.net/FUNCTION, your service must
+require authentication. Invoke your Cloud Run service using the Cloud Run URL or through a
+load balancer URL. For examples on sending authenticated requests, see
+Invoke with an HTTPS request.
+If you set the aud to the Client ID of an OAuth 2.0 Client ID with type
+Web application, using the format nnn-xyz.apps.googleusercontent.com,
+you can invoke your Cloud Run service through an HTTPS load balancer secured by IAP. We recommend
+this approach for an Application Load Balancer backed by multiple Cloud Run services in different regions.
+If you set the aud to a configured custom audience, use the exact values provided. For example,
+if the custom audience is https://service.example.com,
+the audience claim value must also be https://service.example.com.
+Make sure that your requests include an Authorization: Bearer ID_TOKEN
+header, or an X-Serverless-Authorization: Bearer ID_TOKEN header for custom authorization, and that the token is an ID token, not an access or refresh
+token. A 401 error might occur in the following scenarios due to incorrect
+authorization format:
+The authorization token
+uses an invalid format.
+The authorization header isn't a JSON Web Token (JWT) with a valid signature.
+The authorization header contains multiple JWTs.
+Multiple authorization headers are present in the request.
+To check claims on a JWT, use the jwt.io tool.
+If you get invalid tokens when using the
+ metadata server to fetch ID and access tokens to authenticate requests with the Cloud Run service or job identity with an HTTP proxy to route
+ egress traffic, add the following hosts to the HTTP proxy exceptions:
+169.254.* or 169.254.0.0/16
+*.google.internal
+A 401 error commonly occurs when Cloud Client Libraries
+use the metadata server to fetch Application Default Credentials to authenticate REST or gRPC invocations.
+If you don't define the HTTP proxy exceptions, the following behavior results:
+If different Google Cloud workloads host a Cloud Run service or job and the HTTP proxy, even if the Cloud Client Libraries
+fetch the credentials, the service account that's assigned to the HTTP proxy workload generates the tokens. The tokens might not
+have the required permissions to perform the intended Google Cloud API
+operations. This is because the service account fetches the tokens from the view of the
+HTTP proxy workload's metadata server, instead of the Cloud Run service or job.
+If the HTTP proxy isn't hosted in Google Cloud, and you route metadata server
+requests using the proxy, then the token requests fail and
+the Google Cloud APIs operations don't authenticate.
+Redeploy your service to allow public access if this is supported by your organization. This is useful for testing.
+
+One of the following errors occur while invoking your service:
+A 403 error might occur when the IAM
+member used to generate the authorization token is missing the run.routes.invoke
+permission. Grant this permission to the user generating the token.
+Additionally, if there is an entry for the error with the format resource.type = "cloud_run_revision" in Cloud Logging, follow these steps to resolve the error:
+To make your service invocable by anyone,
+update the IAM settings, and make the service public.
+To make your service invocable only by certain identities,
+invoke your service with the proper authorization token:
+If a developer or
+an end user invokes your service, grant the run.routes.invoke permission. You can provide this
+permission through the Cloud Run Admin (roles/run.admin) and Cloud Run Invoker (roles/run.invoker) roles.
+If a service account invokes your service,
+ensure that the service account is a member of the Cloud Run
+service, and grant the Cloud Run Invoker (roles/run.invoker)
+role.
+Calls missing an auth token might cause the 403 error. If calls with
+a valid auth token still lead to the 403 error, grant the IAM
+member that generates the token the run.routes.invoke permission.
+When you encounter a 403 error and don't find the log entry resource.type = "cloud_run_revision", it might be due to
+VPC Service Controls blocking a Cloud Run service that has ingress settings configured to All. For more information on
+troubleshooting VPC Service Controls denials, see 404 errors.
+The following issue occurs when you access a Cloud Run service from a web
+browser:
+When you invoke a Cloud Run service from a web browser, the browser
+sends a GET request to the service. However, the
+request doesn't contain the authorization token of the calling user. To resolve
+this issue, follow these steps:
+Use Identity-Aware Proxy (IAP)
+with Cloud Run. IAP lets you establish a
+central authorization layer for applications accessed over HTTPS. With
+IAP, you can use an application-level access control model
+instead of network-level firewalls. For more details on configuring
+Cloud Run with IAP, see Enabling Identity-Aware Proxy for Cloud Run.
+As a temporary workaround, access your service through a web browser using the
+Cloud Run proxy in Google Cloud CLI. To proxy a service
+locally, run the following command:
+Cloud Run proxies the private service
+to http://localhost:8080 (or to the port you specify with --port), providing
+the token of the active account or another token you specify.
+This is the recommended way to test privately a website or API in your browser.
+For more information, see Testing private services.
+Allow public access to your
+service. This is helpful for testing, or when your service is a
+public API or website.
+One of the following errors occurs when a peer across the network unexpectedly closes
+the TCP connection established by the application:
+To resolve this issue, follow these steps:
+If you are trying to perform background work with CPU throttling, use
+the instance-based billing
+setting.
+Ensure that you are within the
+outbound requests timeouts.
+If your application maintains any connection in an idle state beyond this
+threshold, the gateway needs to reap the connection.
+By default, the TCP socket option keepalive is disabled for
+Cloud Run. There is no direct way to configure the
+keepalive option at the service level.
+To enable the keepalive option for each socket connection,
+provide the required socket options when opening a new TCP socket connection,
+depending on the client library you are using for this connection in
+your application.
+Occasionally, outbound connections are reset
+due to infrastructure updates. If your application reuses long-lived
+connections, we recommend that you configure your application to
+re-establish connections to avoid the reuse of a dead connection.
+If you're using an HTTP proxy to route your Cloud Run services or
+jobs egress traffic, and the proxy enforces maximum connection duration,
+the proxy might silently drop long-running TCP connections such as the ones
+established using connection pooling. This causes HTTP clients to fail when
+reusing an already closed connection.
+If you intend to route egress traffic through an HTTP proxy, you must implement
+connection validation, retries, and exponential backoff. For connection pools, configure maximum values for connection age, idle connections, and connection idle timeout.
+The following errors occur when an application attempts to create a new TCP
+connection with a remote host, and the connection takes too long to
+establish:
+To resolve connection timeout issues, follow these steps:
+If you're routing all egress traffic through a VPC network,
+either using VPC connectors
+or Direct VPC egress, follow these steps:
+Define all the necessary firewall rules to allow ingress
+traffic for the VPC connectors.
+VPC firewall rules must allow ingress
+traffic from the VPC connectors or the Direct VPC egress
+subnet to reach the destination host or subnet.
+Be sure that you have all the required routes to allow correct traffic routing to the
+destination hosts and back. This is important when routing egress
+traffic through VPC Network Peering or
+hybrid cloud connectivity, as packets traverse
+multiple networks before reaching the remote host.
+If you're using an HTTP proxy to route all egress traffic from your
+Cloud Run services or jobs, the remote hosts must be
+reachable using the proxy.
+Traffic routed through an HTTP proxy might be delayed depending on the
+proxy's resource utilization. If you are routing HTTP egress traffic using
+a proxy, implement retries, exponential backoff, or circuit breakers.
+When using an HTTP proxy to route your Cloud Run services or jobs
+egress traffic, add exceptions for Cloud APIs,
+and other non-proxied hosts and subnets, to prevent latency,
+connection timeouts, connection resets and authentication errors.
+Non-proxied hosts and subnets must include, at minimum, the following:
+Optionally, non-proxied hosts might include:
+To set HTTP proxy exceptions for egress networking, configure the following:
+Java Virtual Machine flag http.nonProxyHosts:
+The system property https.nonProxyHosts isn't defined. This
+system property applies to both HTTP and HTTPS.
+The system property http.nonProxyHosts doesn't support
+CIDR notation. You must use pattern matching expressions.
+The following error occurs when there is a container instance connection issue:
+To resolve this issue, follow these steps:
+ Check Cloud Logging
+for the following errors:
+Out of memory errors. If the logs contain error messages regarding container
+instances exceeding memory limits, see the recommendations in the
+Container instances are exceeding memory limits
+section.
+Liveness probe failures
+with the following error in the logs:
+When your instance fails to respond successfully to the probe within the
+timeout period, follow these steps:
+Enable instrument logging and tracing to determine the cause of the increased latency.
+Increase the timeout period
+for the liveness probe.
+If requests are terminating with error code 503
+before reaching the
+request timeout set in Cloud Run,
+update the request timeout setting for your language framework:
+Node.js developers must update the
+server.timeout property through server.setTimeout 
+(use server.setTimeout(0) to achieve an unlimited timeout) depending
+on the version you are using.
+Python developers need to update
+Gunicorn's default timeout ([CRITICAL] WORKER TIMEOUT).
+In some scenarios, a 503 error code might occur due to a downstream network
+bottleneck, such as during load testing. For
+example, if your service routes traffic through a
+Serverless VPC Access connector, ensure that the connector
+doesn't exceed its throughput threshold by following these steps:
+Open Serverless VPC Access in the Google Cloud console:
+Go to Serverless VPC Access 
+Check for any red bars in the throughput
+chart histogram. If there is a red bar
+consider increasing the max instances or instance type your connector
+uses. Alternatively, compress traffic sent through a
+Serverless VPC Access connector.
+If a container instance receives more than
+800 requests per second, the available TCP sockets might be exhausted. To resolve this, turn on HTTP/2 for your service, and make the required changes to your service to
+support HTTP/2.
+The following error occurs when your
+service doesn't return a response within a specified time, and the request ends:
+For more information about this error, see the Container runtime contract.
+To troubleshoot this issue, follow these steps:
+If your service is processing long requests,
+increase the request timeout.
+Instrument logging and tracing to understand where your
+app is spending time before exceeding your configured request timeout.
+Outbound connections are reset
+occasionally, due to infrastructure updates. If your application reuses long-lived
+connections, we recommend that you configure your application to
+re-establish connections to avoid the reuse of a dead connection.
+Depending on your app's logic or error handling, a 504 error might be a signal
+that your application is trying to reuse a dead connection and the
+request blocks until your configured request timeout. Use a liveness probe to terminate an instance that
+returns persistent errors.
+Out of memory errors that happen inside the app's code,
+for example, java.lang.OutOfMemoryError, don't necessarily terminate a
+container instance.
+If memory usage doesn't exceed the
+container memory limit, then Cloud Run won't terminate the instance. Depending on how the app
+handles app-level out of memory errors, requests might not go through until
+they exceed your configured request timeout.
+To terminate the container instance, follow these steps:
+Configure your app-level memory limit to be greater than your
+container memory limit.
+Use a liveness probe to help terminate an instance that returns persistent
+errors.
+
+One of the following errors occurs when you map a custom domain:
+To resolve this issue:
+Wait at least 24 hours. Provisioning the SSL certificate usually takes about
+15 minutes, but it can take up to 24 hours.
+Verify that you've properly updated your DNS records at your domain
+registrar using the Google Admin Toolbox dig tool. The DNS records in your domain registrar must match what the
+Google Cloud console prompts you to add.
+Verify the root of the domain under your account using
+one of the following methods:
+Follow the instructions for
+adding verified domain owners, and check that your account is listed as a Verified Owner.
+Use the
+Search Console.
+Verify that the certificate for the domain is not expired. To find the
+expiry bounds, use the following command:
+When you use HTTP/1.1 on Cloud Run, client disconnect events are not
+propagated to the Cloud Run container.
+To resolve this issue, use Websockets or HTTP/2.0, which propagate client disconnects.
+Except as otherwise noted, the content of this page is licensed under the Creative Commons Attribution 4.0 License, and code samples are licensed under the Apache 2.0 License. For details, see the Google Developers Site Policies. Java is a registered trademark of Oracle and/or its affiliates.
+Last updated 2026-03-04 UTC.
+This page lists key requirements and behaviors of containers in
+Cloud Run. The page also calls out the differences between Cloud Run
+services, Cloud Run jobs, and Cloud Run worker pools where appropriate.
+Your container image can run code written in the programming language of your
+choice and use any base image, provided that it respects the constraints
+listed in this page.
+Executables in the container image must be compiled for Linux 64-bit.
+Cloud Run specifically supports the Linux x86_64 ABI format.
+Cloud Run accepts container images in the Docker Image Manifest V2,
+Schema 1,
+Schema 2, and
+OCI image formats.
+Cloud Run also accepts Zstd compressed container images.
+If deploying a multi-architecture image,
+the manifest list
+must include linux/amd64.
+For functions deployed with Cloud Run, you can use one of the
+Cloud Run runtime base images
+that are published by Google Cloud's buildpacks to receive automatic security and
+maintenance updates. See the
+Runtime support schedule the supported runtimes.
+When deploying containers to Cloud Run, the following requirements must
+be met:
+A Cloud Run service starts Cloud Run instances to handle incoming requests.
+A Cloud Run instance always has one single ingress container that listens for
+requests, and optionally one or more sidecar containers. The following port
+configuration details apply only to the ingress container, not to sidecars.
+The ingress container within an instance must listen for requests on
+0.0.0.0 on the port to which requests are sent.
+Notably, the ingress container should not listen on 127.0.0.1.
+By default, requests are sent to 8080, but you can configure Cloud Run
+to send requests to the port of your choice. Cloud Run injects the
+PORT environment variable into the ingress container.
+
+
+      
+        Preview
+      
+        — Cloud Run worker pools
+    
+
+
+      
+      
+        
+          This feature is
+        
+        subject to the "Pre-GA Offerings Terms" in the General Service Terms section of the
+        Service Specific
+        Terms.
+        
+        Pre-GA features are available "as is" and might have limited support.
+      
+      For more information, see the
+      launch stage descriptions.
+  
+Cloud Run services and jobs support Direct VPC
+egress. This means that they can send
+traffic to private resources within your configured VPC network, such as
+databases or internal services. Cloud Run services and jobs don't
+support Direct VPC ingress.
+Cloud Run worker pools support both Direct VPC
+egress and Direct VPC ingress. When you configure Direct VPC
+for your Cloud Run worker pool deployment, each worker
+instance receives a private IP address on the configured network and subnet.
+Only resources from your VPC network can connect to the worker pool private IP address endpoint.
+For more information about obtaining the private IP addresses of your worker pool
+instance, see Retrieve the private IP addresses using the metadata server
+(MDS).
+For Cloud Run worker pools with Direct VPC ingress, such as database
+connections or any other custom TCP-based protocol, the container must listen
+for TCP connections on the port exposed in your container image through the
+Dockerfile or specified by the PORT environment variable.
+For Cloud Run jobs, the container must exit with exit code 0 when the
+job has successfully completed, and exit with a non-zero exit code when the job
+has failed.
+Because jobs shouldn't serve requests, the container shouldn't listen on a port or
+start a web server.
+The container shouldn't implement any transport layer security directly. TLS is
+terminated by Cloud Run for HTTPS and gRPC, and then requests are proxied as
+HTTP/1 or gRPC to the container without TLS.
+If you configure a Cloud Run service to
+use HTTP/2 end-to-end, your container must handle requests in HTTP/2 cleartext
+(h2c) format, because TLS is still terminated automatically by Cloud Run.
+For Cloud Run services, your container must send a response
+within the time specified in the
+request timeout setting after it
+receives a request, including the container startup time.
+Otherwise the request is ended and a 504 error is returned.
+If your Cloud Run service's response contains a Set-Cookie
+header, Cloud Run sets the Cache-Control header to private so
+that the response is not cached. This prevents other users from retrieving the
+cookie.
+Different sets of environment variables are available for Cloud Run
+services and jobs.
+The following environment variables are automatically added to all the running
+containers except PORT. The PORT variable is only added to the ingress container:
+For Cloud Run jobs, the following environment variables are set:
+Cloud Run sets the following environment variables for worker pools:
+For services, Cloud Run restricts header names to printable non-whitespace ASCII, and cannot
+contain colons. Cloud Run restricts header values to visible ASCII characters, plus
+space and horizontal tab, according to
+IETF RFC 7230.
+Each container's file system is writable and subject to the following
+behavior:
+You cannot specify a size limit for this files system, so you can
+potentially use up all the memory allocated to your instance by writing
+to the in-memory file system, which will crash the instance. You can avoid this
+issue if you use a dedicated in-memory volume
+with a size limit.
+Lifecycle characteristics differ for Cloud Run jobs and services, so
+these are described separately in the following subsections.
+The following characteristics apply to services only.
+By default, a Cloud Run service is
+automatically scaled to the number of
+instances needed to handle all incoming requests, events, or
+CPU utilization. You can optionally use manual scaling
+if you need more control over your scaling behavior.
+Every instance runs a fixed number
+of containers – one ingress container and optionally one or more sidecar containers.
+When a revision does not receive any traffic, it is scaled in to the
+minimum number of instances configured
+(zero by default).
+For Cloud Run services, your instances must listen for requests within
+4 minutes after being started and all containers within
+the instance need to be healthy.
+During this startup time, instances are allocated CPU. You can
+enable startup CPU boost to
+temporarily increase CPU allocation during instance startup in order
+to reduce startup latency.
+Requests will be sent to the ingress container as soon as it is listening on
+the configured port.
+A request waiting for an instance will be kept pending in a queue as
+follows:
+Requests will pend for up to 3.5 times average startup time of container instances of this service, or 10 seconds, whichever is greater.
+You can configure a startup probe to
+determine whether the container has started and is ready to serve requests.
+For a Cloud Run service consisting of multi-container instances, you can specify the sequence in which
+the containers are started within the instance by configuring the container startup order.
+For Cloud Run services, CPU is always allocated to all containers
+including sidecars within an instance as long as the Cloud Run
+revision is processing at least one request.
+For Cloud Run services, an idle instance is one that is not
+processing any requests.
+The CPU allocated to all containers in an idle instance depends on the
+configured billing settings.
+Unless an instance must be kept idle due to
+the minimum number of instances
+configuration setting, it won't be kept idle for longer than 15 minutes.
+For Cloud Run services, an idle instance can be shut down at any time, including
+instances kept warm due to a configured minimum number of instances.
+If an instance that is processing requests needs to be shut down,
+requests already being processed are given time to complete, and new incoming requests are routed to other instances. In exceptional cases, Cloud Run might initiate a shutdown and send a
+SIGTERM signal to a container that is still processing requests.
+Before shutting down an instance, Cloud Run sends a SIGTERM signal to all the containers in an instance,
+indicating the start of a 10 second period
+before the actual shutdown occurs, at which point Cloud Run sends a SIGKILL signal.
+During this period, the instance is allocated CPU and billed.
+In services that use the first generation execution environment, if the
+instance does not trap the SIGTERM signal, it is
+immediately shut down. In services that use the second generation execution
+environment, we recommend installing a
+SIGTERM handler on
+your container to receive a warning when Cloud Run is about to shut
+down an instance.
+If one or more Cloud Run containers exceed the
+total container memory limit,
+the instance is terminated. All requests that are still processing on the instance
+end with an HTTP 500 error.
+For Cloud Run jobs, container instances run until the container
+instance exits, or until the task timeout
+is reached or until the container crashes.
+You can use job exit codes to see whether the job completed successfully or
+whether it encountered any errors. The exit codes are numerical values that map
+to successful completion or specific types of errors.
+The following table specifies common exit codes and their definitions:
+A Cloud Run container instance that exceeds the
+allowed memory limit
+is terminated. All requests that are still processing on the container instance
+end with an HTTP 500 error.
+If a task exceeds the task timeout,
+Cloud Run sends a 'SIGTERM' signal indicating the start of a
+10 second period before the actual shutdown
+occurs, at which point Cloud Run sends a
+SIGKILL signal, shutting down the container instance.
+During this period, container instances are allocated CPU for their entire
+lifecycle and are billed.
+Refer to the SIGTERM code sample
+to learn how to trap the SIGTERM signal.
+The following characteristics apply only to worker pools.
+Worker pools don't automatically scale. Manually
+scale the number of instances
+that your Cloud Run worker pool requires to handle its workload. By
+default, Cloud Run sets the number of instances to 1. You can change
+this number to be higher or lower, or you can disable scaling by setting the
+number to 0. To start and remain active, your workload must have at least one
+instance. If you set the minimum instances to 0, the worker instance won't
+start, even if the deployment is successful.
+Cloud Run worker pools instances start the container with
+the entrypoint you specify in the container image or in the worker pool
+configuration. All containers in the instance must be healthy.
+By default, Cloud Run container instances use one CPU. You can
+increase or decrease this value based
+on your requirements.
+You can configure a startup probe
+to determine whether the container started.
+The startup probe enables Cloud Run to inspect the health of a dependent
+container, making sure it passes successfully before it starts up the next container.
+If you don't use health checks, Cloud Run starts containers in the
+specified order, even if containers they depend on fail to start.
+Worker pools don't idle. Regardless of
+its state, Cloud Run always allocates CPU to to all containers,
+including sidecars within a worker pool instance.
+As long as it's running, an instance is considered active and is billed
+accordingly.
+Cloud Run doesn't scale down worker pool instances based on idle
+instances. If a workload-processing instance must be shut down,
+Cloud Run gives tasks in-process tasks time to complete and
+routes new workloads to other instances. Cloud Run
+might also initiate a shutdown and send a SIGTERM signal to a container that is still
+processing a workload.
+Before shutting down an instance, Cloud Run sends a SIGTERM signal
+to all the containers in an instance. This signal indicates the start of a 10-second period before the actual shutdown
+occurs, at which point Cloud Run sends a SIGKILL signal.
+During this shutdown period, the instance is allocated CPU and billed.
+We recommend installing a
+SIGTERM handler on
+your container to receive a warning when Cloud Run is about to shut
+down an instance.
+If one or more Cloud Run containers exceed the
+total container memory limit,
+Cloud Run terminates the instance. All requests that are still
+processing on the instance end with an HTTP 500 error.
+Your container runs under a cgroup controller that restricts CPU, RAM, and other
+resources to those configured for your container.
+The following sections describe resources for your container instance:
+Each Cloud Run container in an instance by default gets allocated the vCPU
+that has been configured
+(1 by default). It is possible to configure CPU limits on each container separately.
+A vCPU is implemented as an abstraction of underlying
+hardware to provide the approximate equivalent CPU time of a single hardware
+hyper-thread on variable CPU platforms. All CPU platforms used by Cloud Run
+support the AVX2
+instruction set. Note that the container contract does not contain any additional CPU platform details.
+The container might be executed on multiple cores simultaneously.
+For Cloud Run services, CPU allocation depends on the
+selected billing.
+If you select instance-based billing, CPU is allocated during the life of the
+instance. If you select request-based billing (default), CPU is allocated when
+instances are processing requests. Refer to
+billing settings for details.
+If you have configured a number of
+minimum instances, you must use
+instance-based billing so that CPU is allocated
+outside of requests.
+You can enable startup CPU boost to
+temporarily increase CPU allocation during instance startup in order
+to reduce startup latency.
+Each Cloud Run container by default gets allocated the memory
+that has been configured,
+(512 MiB by default). It is possible to configure memory limits on each container separately.
+Typical uses of memory include:
+You can configure a container in a Cloud Run instance to access a GPU.
+If the Cloud Run service is deployed with
+sidecar containers, only one container in the deployment can access the GPU. See
+Configure GPU for requirements and details.
+By default, all of the NVIDIA L4 and NVIDIA RTX PRO 6000 Blackwell GPU driver libraries
+are mounted under /usr/local/nvidia/lib64. Cloud Run automatically
+appends this path to the LD_LIBRARY_PATH environment variable
+(i.e. ${LD_LIBRARY_PATH}:/usr/local/nvidia/lib64) of the container with the
+GPU. This allows the dynamic linker to find the NVIDIA driver libraries. The
+linker searches and resolves paths in the order you list in the LD_LIBRARY_PATH
+environment variable. Any values you specify in this variable take precedence
+over the default Cloud Run driver libraries path /usr/local/nvidia/lib64.
+If you want to use a CUDA version greater than 12.2,
+the easiest way is to depend on a newer NVIDIA base image
+with forward compatibility packages already installed. Another option is to
+manually install the NVIDIA forward compatibility packages
+and add them to LD_LIBRARY_PATH. Consult NVIDIA's compatibility matrix
+to determine which CUDA versions are forward compatible with the provided NVIDIA
+driver version.
+For Cloud Run services, each Cloud Run instance by default is set to multiple concurrency,
+where the ingress container can receive more than one request at the same time.
+You can change this by setting concurrency.
+The following restrictions apply to containers that run in Cloud Run.
+They apply regardless of the Linux user that the container image specifies for
+execution.
+In Cloud Run, your containers are not granted the root
+capabilities of the instance's security boundary. Containers cannot perform actions reserved
+for the host, such as the following:
+Privilege escalation is also disabled in your containers. Use of sudo and
+setuid binaries are not supported in Cloud Run.
+Your containers won't have write access to most of the files and directories in
+/dev, /proc, and /sys.
+There is no Cloud Run equivalent to Docker's --privileged mode.
+Cloud Run executes your containers under user, network, PID, and
+other Linux namespaces, isolating them from each other and from the instance
+itself. This restricts some network capabilities and prevents your root
+containers from running as "true root."
+The supported path for mounting file systems in Cloud Run is
+through the fully managed volume mounts feature in your Cloud Run container configuration.
+Other mechanisms of mounting from inside user containers are not supported and
+won't work. Unsupported mechanisms include, but aren't limited to, the following:
+In addition, Cloud Run doesn't support nested volume mounts that
+mount one volume inside of another volume.
+Changing the system time using adjtimex and adjtime system calls is not
+supported, nor are any tools that might permit your container to do so.
+Basic security profiles, similar to seccomp security profiles for Docker,
+are applied around each of your containers.
+Use of eBPF and other kernel-level security features that aren't protected or
+limited by Linux namespaces are disabled and not supported for use inside
+containers.
+Use of other system calls or access system files that require root privileges on
+the Cloud Run instance might also be restricted for this reason.
+If you use the first generation execution environment,
+the Cloud Run containers are sandboxed using
+the gVisor container runtime sandbox.
+As documented in the gVisor syscall compatibility reference,
+some system calls might not be supported by this container sandbox.
+If you use the second generation execution environment,
+you have full Linux compatibility.
+Cloud Run jobs always use the second generation execution environment.
+Within the second generation execution environment,
+/sys/class/dmi/id/product_name is set to Google Compute Engine.
+The second generation execution environment runs your service code in a separate
+process namespace, so it starts as the container init process which has special
+process semantics. In the first generation execution environment, your service
+code does not run as the container init process.
+Cloud Run first and second generation environments set a limit on
+the number of file descriptors a process can open to
+25000. This applies to the container and any
+child process it creates (forks).
+This is a hard limit. If you exceed the limit your instance might run out of
+file descriptors/sockets.
+Except for the file descriptor limits described earlier,
+limits in the second generation environment are standard linux limits.
+For example, the limits on the number of file descriptors that can be
+opened (as captured in: /proc/sys/fs/file-max) use the default value of about
+10% of memory. See file-max and file-nr
+in the kernel documentation for details.
+Similarly, the max_map_count (as captured in /proc/sys/vm/max_map_count),
+which sets the number of memory areas a process can have is using the default
+of 65535. See max-map-count
+in the kernel documentation for details.
+Cloud Run doesn't support privileged containers. Consequently, Cloud Run doesn't support binaries that use
+setuid flags for non-root users, such as gcsfuse
+or sudo, and might fail due to insufficient permissions.
+One alternative is to execute these binaries as the root user and
+then use the su command to switch to another user at runtime.
+For example, in your Dockerfile, remove the USER instruction, and in your
+entrypoint script, use the following sequence:
+If the user name doesn't
+exist, Cloud Run runs the container as the root user (uid=0).
+Cloud Run adds an entry to the /etc/hosts file in each
+container. This entry maps the service names to the localhost IP address
+(127.0.0.1). This lets containers communicate with each other using their
+container name.
+Cloud Run instances expose a metadata server that you can use
+to retrieve details about your containers, such as the project ID,
+region, instance ID or service accounts. You can also use the metadata server to
+generate tokens for the service identity.
+To access metadata server data, use HTTP requests to the
+http://metadata.google.internal/ endpoint with the Metadata-Flavor: Google
+header: no client libraries are required. For more information, see
+Getting metadata.
+The following table lists some of the available metadata server information:
+Cloud Run doesn't provide details about which
+Google Cloud zone the instances
+are running in. As a consequence, the metadata attribute /computeMetadata/v1/instance/zone
+always returns projects/PROJECT-NUMBER/zones/REGION-1.
+The file names that you use in containers must be UTF-8 compatible, either UTF-8
+or something that can be safely auto-converted to UTF-8. If your file names use
+different encodings, run Docker build on a machine with UTF-8 compatible filenames,
+and avoid copying files to a container that contains incompatible UTF-8 names.
+Container deployment fails if file names are not UTF-8 compatible. Note that
+there's no restriction on the character
+encoding you use within a file.
+For Cloud Run services and jobs, there is a timeout after
+10 minutes of idle time for requests from your container to
+VPC.
+For requests from your container to the internet, there is a timeout after
+20 minutes of idle time.
+Connection streams from your container to both VPC and internet can be
+occasionally terminated and replaced when underlying infrastructure is restarted
+or updated. If your application reuses long-lived connections, we
+recommend that you configure your application to re-establish connections to
+avoid the reuse of a dead connection.
+Except as otherwise noted, the content of this page is licensed under the Creative Commons Attribution 4.0 License, and code samples are licensed under the Apache 2.0 License. For details, see the Google Developers Site Policies. Java is a registered trademark of Oracle and/or its affiliates.
+Last updated 2026-03-03 UTC.
+This page describes how to configure the container
+port, entrypoint command, and arguments for a Cloud Run
+service.
+When Cloud Run starts a container, it runs the image's default
+entrypoint command and default command arguments. If you want to
+override the image's default entrypoint and command arguments, you can use the
+command and args fields in the container configuration. The command field
+specifies the actual command run by the container. The args field specifies
+the arguments passed to that command.
+Note that you can have a maximum of
+1000 arguments per container for each
+service.
+
+    
+      To get the permissions that
+      you need to configure and deploy Cloud Run services,
+    
+      ask your administrator to grant you the
+    following IAM roles
+    :
+  
+    
+
+
+If you are deploying a service
+or function from source code, you
+must also have additional roles granted to you on your project and
+Cloud Build service account.
+For a list of IAM roles and permissions that are associated with
+Cloud Run, see
+Cloud Run IAM roles
+and Cloud Run IAM permissions.
+If your Cloud Run service interfaces with
+Google Cloud APIs, such as Cloud Client Libraries, see the
+service identity configuration guide.
+For more information about granting roles, see
+deployment permissions
+and manage access.
+Any configuration change leads to the
+creation of a new revision. Subsequent revisions will also automatically get
+this configuration setting unless you make explicit updates to change it.
+For Cloud Run services, Cloud Run injects the PORT
+environment variable into the container. If you deploy multiple containers to a
+service, this is the ingress container. The container listens on the port
+defined by the PORT environment variable, rather than on a specific hardcoded
+port. If this isn't possible, configure listening to occur on the port
+that sends requests to the container. Note that port settings don't apply to
+Cloud Run jobs.
+
+
+In the Google Cloud console, go to Cloud Run:
+Go to Cloud Run 
+Select Services from the Cloud Run navigation menu, and click
+Deploy container to configure a new service.
+If you are configuring an existing service, click the
+service, then click Edit and deploy new revision.
+If you are configuring a new service, fill out the initial service
+settings page, then click Container(s), Volumes, Networking, Security to expand the
+service configuration page.
+Click the Container tab.
+ 
+Click Create or Deploy.
+You can update a service's port configuration
+using the following command:
+Replace the following:
+You can also configure ports during
+deployment using the command:
+Replace IMAGE_URL with a reference to the container image, for
+example, us-docker.pkg.dev/cloudrun/container/hello:latest. If you use Artifact Registry,
+the repository REPO_NAME must
+already be created. The URL follows the format of LOCATION-docker.pkg.dev/PROJECT_ID/REPO_NAME/PATH:TAG
+.
+If you are creating a new service, skip this step.
+If you are updating an existing service, download its YAML configuration:
+Update the containerPort: attribute:
+Replace the following:
+Replace the service with its new configuration using the following
+command:
+To learn how to apply or remove a Terraform configuration, see
+Basic Terraform commands.
+Replace the following:
+Any configuration change leads to the
+creation of a new revision. Subsequent revisions will also automatically get
+this configuration setting unless you make explicit updates to change it.
+The specified container command and arguments override the default image
+ENTRYPOINT and CMD.
+You can set entrypoint command and arguments  using the Google Cloud console,
+the Google Cloud CLI, or using a YAML file when you
+create a new service or
+deploy a new revision:
+
+
+In the Google Cloud console, go to Cloud Run:
+Go to Cloud Run 
+Select Services from the Cloud Run navigation menu, and click
+Deploy container to configure a new service.
+If you are configuring an existing service, click the
+service, then click Edit and deploy new revision.
+If you are configuring a new service, fill out the initial service
+settings page, then click Container(s), Volumes, Networking, Security to expand the
+service configuration page.
+Click the Container tab.
+ 
+Click Create or Deploy.
+To update the start command and arguments for an existing service:
+Replace the following:
+To specify entrypoint and arguments during
+deployment of a new or existing service:
+Replace IMAGE_URL with a reference to the container image, for
+example, us-docker.pkg.dev/cloudrun/container/hello:latest. If you use Artifact Registry,
+the repository REPO_NAME must
+already be created. The URL follows the format of LOCATION-docker.pkg.dev/PROJECT_ID/REPO_NAME/PATH:TAG
+.
+To clear any entrypoint commands and arguments you have set (restore to container
+defaults), supply empty strings as follows:
+If you are creating a new service, skip this step.
+If you are updating an existing service, download its YAML configuration:
+Update the command and args attributes:
+Replace the following:
+Replace the service with its new configuration using the following
+command:
+To learn how to apply or remove a Terraform configuration, see
+Basic Terraform commands.
+The preceding google_cloud_run_v2_service resource specifies a command and
+args. Replace /server with the command used to start
+your container, and add any necessary arguments to the args array.
+If you use equal signs in your arguments, supply these using the following
+format:
+If your arguments use commas, refer to
+configuring environment variables
+for details on escaping those.
+To specify container start up order in a
+sidecar deployment, you use the
+container dependencies feature. You specify any containers that have dependencies
+and list the containers they depend on: those containers are started first. The
+containers that don't have any dependencies are always started first and
+concurrently.
+You must use startup healthcheck probes
+if you want to use this feature successfully. The startup probe enables
+Cloud Run to inspect the health of a dependent container, making sure
+it passes successfully before it starts up the next container. If you don't use
+healthchecks, containers are started in the specified order even if containers
+they depend on fail to start.
+Note that ingress containers have a default startup healthcheck probe.
+You can use Google Cloud console, the Google Cloud CLI, or YAML to specify the
+startup order:
+In the Google Cloud console, go to the Cloud Run Services page:
+Go to Cloud Run 
+For a new service, specify the service name, ingress container URL, CPU
+allocation, ingress control, and authentication. In the
+Container(s), Volumes, Networking, Security tab, do the following:
+For an existing service, follow these steps:
+Finish any other required configurations, then click Create for a new
+service or Deploy for an existing service. Wait for the deployment to finish.
+
+Before using the Google Cloud CLI to specify startup order, you must
+configure a startup healthcheck for
+all containers except the ingress container. Ingress containers have a
+default startup healthcheck. You cannot configure healthchecks
+using the Google Cloud CLI.
+
+
+In the Google Cloud console, activate Cloud Shell.
+Activate Cloud Shell
+
+      At the bottom of the Google Cloud console, a
+      Cloud Shell
+      session starts and displays a command-line prompt. Cloud Shell is a shell environment
+      with the Google Cloud CLI
+      already installed and with values already set for
+      your current project. It can take a few seconds for the session to initialize.
+    
+To deploy multiple containers to a service with a specified startup order,
+run the command:
+Replace the following:
+SIDECAR_IMAGE: a reference to the sidecar container image.
+If you want to configure each container in the deploy command, supply each
+container's configuration after the container parameters.
+If you are creating a new service, skip this step.
+If you are updating an existing service, download its YAML configuration:
+Update the container-dependencies attribute:
+Replace the following:
+In the example shown in the YAML snippet, CONTAINER2 is
+started first, CONTAINER1 is started second, and
+CONTAINER3 is started last.
+Replace the service with its new configuration using the following
+command:
+To learn how to apply or remove a Terraform configuration, see
+Basic Terraform commands.
+Replace the following:
+To view the current container settings for your
+Cloud Run service:
+In the Google Cloud console, go to the Cloud Run Services page:
+Go to Cloud Run 
+Click the service you are interested in to open the Service details
+page.
+Click the Revisions tab.
+In the details panel at the right, the container setting
+is listed under the Container tab.
+Use the following command:
+Locate the container setting in the returned
+configuration.
+Except as otherwise noted, the content of this page is licensed under the Creative Commons Attribution 4.0 License, and code samples are licensed under the Apache 2.0 License. For details, see the Google Developers Site Policies. Java is a registered trademark of Oracle and/or its affiliates.
+Last updated 2026-03-03 UTC.

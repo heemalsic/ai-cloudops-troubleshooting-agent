@@ -1,0 +1,7 @@
+Cloud Run revision failed.
+
+Error: Container failed to start.
+Reason: Port 8080 not listening.
+
+Service: payment-api
+Revision: payment-api-00004
