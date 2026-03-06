@@ -30,6 +30,8 @@ Cloud Logging API → RAG Docs → Gemini → Diagnosis
 
 ## Example Output
 
+Finding root cause using the log matrics of the docker container deployed on gcp:
+
 ![UI](images/Screenshot%202026-03-06%20051753.png)
 Root Cause: Container not listening on port 8080  
 Evidence: Logs show container startup failure  
